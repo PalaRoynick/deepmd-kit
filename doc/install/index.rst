@@ -7,6 +7,7 @@ Installation
    easy-install
    install-with-agent
    install-from-source
+   build-with-python-env
    install-from-c-library
    install-lammps
    install-ipi

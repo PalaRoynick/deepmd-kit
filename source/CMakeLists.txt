@@ -13,6 +13,41 @@ if(ENABLE_TENSORFLOW)
   set(ENABLE_JAX ON)
 endif()
 option(ENABLE_PADDLE "Enable Paddle interface" OFF)
+option(USE_CUDA_TOOLKIT "Build NVIDIA CUDA operators (requires nvcc)" OFF)
+option(USE_ROCM_TOOLKIT "Build AMD ROCm operators" OFF)
+option(USE_TF_PYTHON_LIBS
+       "Use TensorFlow from Python_EXECUTABLE, including its bundled headers"
+       OFF)
+option(USE_PT_PYTHON_LIBS "Use PyTorch from Python_EXECUTABLE" OFF)
+if(NOT DEFINED Python_FIND_VIRTUALENV)
+  set(Python_FIND_VIRTUALENV FIRST)
+endif()
+set(LAMMPS_SOURCE_ROOT
+    "${LAMMPS_SOURCE_ROOT}"
+    CACHE
+      PATH
+      "LAMMPS source tree for the DeePMD runtime plugin (not its install prefix)"
+)
+set(LAMMPS_VERSION
+    "${LAMMPS_VERSION}"
+    CACHE STRING
+          "LAMMPS Git tag to download instead of using LAMMPS_SOURCE_ROOT")
+set(_lammps_plugin_default OFF)
+if(LAMMPS_SOURCE_ROOT OR LAMMPS_VERSION)
+  set(_lammps_plugin_default ON)
+endif()
+option(ENABLE_LAMMPS_PLUGIN "Build the DeePMD LAMMPS runtime plugin"
+       ${_lammps_plugin_default})
+if(ENABLE_LAMMPS_PLUGIN)
+  if(DEFINED BUILD_CPP_IF AND NOT BUILD_CPP_IF)
+    message(FATAL_ERROR "ENABLE_LAMMPS_PLUGIN requires BUILD_CPP_IF=ON")
+  endif()
+  if(NOT LAMMPS_SOURCE_ROOT AND NOT LAMMPS_VERSION)
+    message(
+      FATAL_ERROR
+        "ENABLE_LAMMPS_PLUGIN requires LAMMPS_SOURCE_ROOT or LAMMPS_VERSION")
+  endif()
+endif()
 option(BUILD_TESTING "Build test and enable coverage" OFF)
 option(ALLOW_NO_BACKEND
        "Allow a backend-neutral C/C++ build without built-in backend plugins"
@@ -208,12 +243,14 @@ if(BUILD_TESTING)
 endif()
 
 # build cpp or python interfaces
-if(NOT DEFINED BUILD_CPP_IF)
-  set(BUILD_CPP_IF TRUE)
-endif(NOT DEFINED BUILD_CPP_IF)
-if(NOT DEFINED BUILD_PY_IF)
-  set(BUILD_PY_IF FALSE)
-endif(NOT DEFINED BUILD_PY_IF)
+option(BUILD_CPP_IF "Build the C/C++ interfaces" ON)
+option(BUILD_PY_IF "Build the Python package operators" OFF)
+set(_ipi_default ON)
+if(BUILD_PY_IF)
+  set(_ipi_default OFF)
+endif()
+option(ENABLE_IPI "Build the dp_ipi executable and i-PI driver library"
+       ${_ipi_default})
 if((NOT BUILD_PY_IF) AND (NOT BUILD_CPP_IF))
   # nothing to do
   message(FATAL_ERROR "Nothing to do.")
@@ -357,6 +394,7 @@ if(BUILD_CPP_IF
    AND USE_PT_PYTHON_LIBS
    AND NOT CMAKE_CROSSCOMPILING
    AND NOT SKBUILD)
+  set(ENABLE_PYTORCH TRUE)
   find_package(
     Python
     COMPONENTS Interpreter
@@ -574,6 +612,18 @@ if(BUILD_CPP_IF)
   endif()
 endif(BUILD_CPP_IF)
 
+message(STATUS "DeePMD build configuration:")
+message(STATUS "  Install prefix: ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "  Python interpreter: ${Python_EXECUTABLE}")
+message(STATUS "  Device variant: ${DP_VARIANT}")
+message(STATUS "  C/C++ interface: ${BUILD_CPP_IF}")
+message(STATUS "  Python operators: ${BUILD_PY_IF} (install CLI with pip)")
+message(STATUS "  LAMMPS plugin: ${ENABLE_LAMMPS_PLUGIN}")
+message(STATUS "  i-PI driver: ${ENABLE_IPI}")
+if(ENABLE_LAMMPS_PLUGIN)
+  message(STATUS "  Build LAMMPS separately to obtain the lmp executable")
+endif()
+
 option(DP_USING_C_API "Build third-party interface with C API" ON)
 
 if(DEEPMD_C_ROOT)
@@ -633,12 +683,12 @@ if(BUILD_CPP_IF)
     add_subdirectory(api_cc/)
     add_subdirectory(api_c/)
   endif()
-  if(LAMMPS_VERSION OR NOT BUILD_PY_IF)
+  if(ENABLE_LAMMPS_PLUGIN OR NOT BUILD_PY_IF)
     add_subdirectory(lmp/)
   endif()
   if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 4.8)
     # add_subdirectory (md/)
-    if(ENABLE_IPI OR NOT BUILD_PY_IF)
+    if(ENABLE_IPI)
       add_subdirectory(ipi/)
     endif()
   endif()

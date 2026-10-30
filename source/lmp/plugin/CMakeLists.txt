@@ -1,7 +1,7 @@
-if(DEFINED LAMMPS_SOURCE_ROOT OR DEFINED LAMMPS_VERSION)
+if(ENABLE_LAMMPS_PLUGIN)
   message(STATUS "enable LAMMPS plugin mode")
   add_library(lammps_interface INTERFACE)
-  if(DEFINED LAMMPS_VERSION)
+  if(LAMMPS_VERSION)
     cmake_minimum_required(VERSION 3.25.2)
     include(FetchContent)
     FetchContent_Declare(
@@ -14,6 +14,11 @@ if(DEFINED LAMMPS_SOURCE_ROOT OR DEFINED LAMMPS_VERSION)
     set(LAMMPS_SOURCE_ROOT ${CMAKE_BINARY_DIR}/_deps/lammps_download-src)
   endif()
   set(LAMMPS_HEADER_DIR ${LAMMPS_SOURCE_ROOT}/src)
+  if(NOT EXISTS "${LAMMPS_HEADER_DIR}/version.h")
+    message(
+      FATAL_ERROR
+        "LAMMPS_SOURCE_ROOT must contain src/version.h: ${LAMMPS_SOURCE_ROOT}")
+  endif()
   message(STATUS "LAMMPS_HEADER_DIR is ${LAMMPS_HEADER_DIR}")
 
   target_include_directories(lammps_interface INTERFACE ${LAMMPS_HEADER_DIR})

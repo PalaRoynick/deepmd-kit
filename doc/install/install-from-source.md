@@ -1,5 +1,8 @@
 # Install from source code
 
+For a complete workflow using an existing Python environment, including the native
+libraries and runtime plugin, see [Build with a Python environment](build-with-python-env.md).
+
 An AI agent can walk through this source build, including the C++ interface
 and LAMMPS with Kokkos. See [Install with an AI agent](install-with-agent.md).
 

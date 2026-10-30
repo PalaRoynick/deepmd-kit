@@ -1,5 +1,8 @@
 # Install LAMMPS
 
+For a complete workflow using an existing Python environment, including the native
+libraries and runtime plugin, see [Build with a Python environment](build-with-python-env.md).
+
 An AI agent can build LAMMPS with the DeePMD-kit module and Kokkos. DPA4/SeZM
 uses `pair_style deepmd/kk`; DPA4C uses `pair_style dpa4spin/kk`. See
 [Install with an AI agent](install-with-agent.md).
